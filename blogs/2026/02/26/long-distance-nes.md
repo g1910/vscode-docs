@@ -91,33 +91,19 @@ Because the full edit may be far away and potentially large, the widget does not
 
 If the preview looks useful, you can choose to jump to the suggested location and review or apply the full edit there. If not, you can continue editing uninterrupted.
 
-## Internal testing and a key realization: Restraint
+## Validating: from dogfooding to A/B tests
 
-We always dogfood and iterate internally before shipping new capabilities. Long-distance NES was no exception.
+We always dogfood internally before shipping new capabilities, and long-distance NES was no exception. Early feedback revealed a clear pattern: the model was too eager to jump. Even when its predictions were directionally correct, frequent suggestions became distracting. The root cause was a **dataset imbalance**: far fewer "no jump" examples than jump examples. The model had learned to jump confidently but hadn't learned when to stay put.
 
-During internal testing, one insight quickly became clear: predicting **when _not_ to jump is just as important as predicting where to jump**. In fact, it is often harder.
+We rebalanced the dataset by expanding samples where the correct action was to remain on the current line, such as partially typed identifiers where jumping would not make sense. After retraining, both jump and no-jump accuracy improved, and suggestions felt noticeably more intentional.
 
-While many of the model’s jump predictions were directionally correct, it was too eager to move the cursor. Even reasonable suggestions can become distracting if they appear too frequently. In a system that proactively proposes spatial changes, overconfidence is costly.
+To validate at scale, we ran A/B tests comparing long-distance NES against standard NES. The results were encouraging: a **23% increase in code written via NES**, along with improvements across other engagement metrics. But the experiment also surfaced a tradeoff. Far-away suggestions were rejected more often than standard NES. Some of this was expected given a new interaction pattern, but it signaled that the model still needed to be more selective about when to suggest a jump.
 
-When we analyzed evaluation metrics more closely, we found the root cause. Our dataset contained far fewer "no jump" examples than jump examples. In other words, the model had learned to jump confidently but hadn't learned when to stay put.
-
-To address this, we reintroduced and expanded samples where the correct action was to remain on the current line. These included cases such as partially typed identifiers, where jumping elsewhere would not make sense. After rebalancing the dataset and retraining, both jump and no-jump accuracy improved significantly.
-
-More importantly, the qualitative feedback from dogfooding shifted. Suggestions felt more intentional and less intrusive, reinforcing that knowing when _not_ to act is just as important as knowing _where_ to act.
-
-## Running A/B tests
-
-Before shipping long-distance NES to all users, we needed to validate at scale. We ran A/B tests comparing long-distance NES against standard NES. Our primary goal was to measure impact on real editing behavior: does this actually help you write and update code more efficiently?
-
-The initial results were positive. With long-distance edits enabled, we observed a **23% increase in code written via NES**, along with improvements across several other engagement and acceptance metrics.
-
-At the same time, the experiment surfaced an important tradeoff. While expanded capabilities increased productivity, far-away suggestions were rejected more often than standard NES. Some of this was expected, given a new interaction pattern and broader edit scope. However, it also signaled an opportunity to improve how selectively the model chose to suggest jumps.
-
-Rather than treating this purely as a modeling issue or purely as a UX issue, we viewed it as a systems problem. Improving long-distance NES required tightening the model's jump predictions while also ensuring the interface made it easy to assess and accept relevant suggestions.
+This wasn't purely a modeling problem or purely a UX problem. It was both. Improving long-distance NES required tightening the model's jump predictions while also ensuring the interface made it easy to assess and accept relevant suggestions.
 
 ## Reinforcement Learning: Learning when not to jump
 
-Both internal testing and the A/B experiments pointed to the same conclusion: the supervised model was still too eager to move the cursor. Precision alone was not enough. The model needed restraint.
+The validation results pointed to a clear conclusion: the supervised model needed more restraint.
 
 To address this, we introduced a reinforcement learning stage using **Reinforcement Learning with Verified Rewards (RLVR)**. Instead of relying solely on supervised labels, we added a grading signal based on how closely the model's predicted jump location matched the eventual cursor movement. Predictions that aligned closely with actual editing behavior were rewarded more strongly, while unnecessary or poorly timed jumps were penalized.
 
