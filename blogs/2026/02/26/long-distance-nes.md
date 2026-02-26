@@ -10,7 +10,7 @@ Author: TODO
 
 # Building Long-Distance Next Edit Suggestions
 
-February 18, 2026 by [TODO](https://github.com/TODO)
+February 26, 2026 by [TODO](https://github.com/TODO)
 
 Last February, we released [next edit suggestions (NES)](/docs/copilot/ai-powered-suggestions.md#next-edit-suggestions) in GitHub Copilot. NES extends ghost text by not just inserting code at your cursor, but suggesting edits nearby, anticipating what you'd change next. This was a powerful step forward, but it only worked within a small window around your cursor. In real editing workflows, the next change you need to make is often several screens away.
 
