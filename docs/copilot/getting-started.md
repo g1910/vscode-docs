@@ -42,7 +42,7 @@ AI-powered inline suggestions appear as you type, helping you write code faster 
 
     ![Screenshot showing Copilot suggesting HTML structure inline suggestion.](./images/getting-started/html-completion.png)
 
-    You might see different suggestions because large language models are nondeterministic.
+    You might see different suggestions because large language models are [nondeterministic](/docs/copilot/core-concepts.md#ai-limitations).
 
 1. Press `kbstyle(Tab)` to accept the suggestion.
 
@@ -92,7 +92,7 @@ AI Agents are VS Code's most powerful AI capability. Given a natural language pr
 
 1. Review the generated files and select **Keep** to accept all the changes.
 
-1. Open your `index.html` file in the integrated browser VS Code by right-clickign the file and selecting **Show Preview**. You can add tasks, mark them as complete, and delete them.
+1. Open your `index.html` file in the integrated browser VS Code by right-clicking the file and selecting **Show Preview**. You can add tasks, mark them as complete, and delete them.
 
 1. Now, let's add an extra feature. Enter the following prompt in the chat input box:
 
@@ -263,6 +263,8 @@ You can further enhance your AI's capabilities by exploring other customization 
 * Extend the AI's capabilities with extra tools from MCP (Model Context Protocol) servers or VS Code extensions.
 
 ## Related resources
+
+* [How GitHub Copilot works](/docs/copilot/core-concepts.md): Core concepts, terminology, and the architecture behind Copilot's features
 
 * [Agents tutorial](/docs/copilot/agents/agents-tutorial.md): Hands-on tutorial for working with different agent types
 

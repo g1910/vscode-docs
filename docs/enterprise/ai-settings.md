@@ -22,9 +22,17 @@ To disable agents entirely, set the `ChatAgentMode` policy to `false`. This conf
 
 The **Agent** option will not be available in the agents dropdown in the Chat view when this policy is applied. Developers can still use [ask or edit](/docs/copilot/chat/copilot-chat.md) for code explanations and file edits, but autonomous code generation and task execution are not available.
 
+## Enable or disable hooks
+
+[Hooks](/docs/copilot/customization/hooks.md) enable you to execute custom shell commands at key lifecycle points during agent sessions, such as before or after tool invocations, at session start, or when an agent stops. Hooks can automate workflows, enforce security policies, and control agent behavior.
+
+To disable hooks entirely, set the `ChatHooks` policy to `false`. This configures the `setting(chat.useHooks)` setting in VS Code.
+
+When this policy is applied, hook configurations are ignored and no hook commands are executed during agent sessions.
+
 ## Enable or disable extension language tools
 
-[Tools in chat](/docs/copilot/chat/chat-tools.md) extend the AI assistant's capabilities with specialized functions. These tools can come from built-in features, Model Context Protocol (MCP) servers, or third-party extensions.
+[Tools in chat](/docs/copilot/agents/agent-tools.md) extend the AI assistant's capabilities with specialized functions. These tools can come from built-in features, Model Context Protocol (MCP) servers, or third-party extensions.
 
 Third-party extensions can contribute tools that integrate with chat by using the [Language Model Tools API](/api/extension-guides/ai/tools).
 
@@ -62,7 +70,7 @@ Organizations with GitHub Copilot Enterprise or Business can also configure MCP 
 
 Agent tools can perform actions that modify files, run commands, or access external services. VS Code includes approval prompts for potentially risky operations. Organizations can enforce stricter approval requirements or disable auto-approval entirely.
 
-Learn more about [tool approval](/docs/copilot/chat/chat-tools.md#tool-approval) in VS Code.
+Learn more about [tool approval](/docs/copilot/agents/agent-tools.md#tool-approval) in VS Code.
 
 ### Disable global auto-approval
 
@@ -133,7 +141,7 @@ AI-powered development features can autonomously perform actions with user-level
 ## Related resources
 
 * [Enterprise policies reference](/docs/enterprise/policies.md) - Complete list of enterprise policies
-* [Use tools in chat](/docs/copilot/chat/chat-tools.md) - Learn how tools work in VS Code chat
+* [Use tools in chat](/docs/copilot/agents/agent-tools.md) - Learn how tools work in VS Code chat
 * [MCP servers in VS Code](/docs/copilot/customization/mcp-servers.md) - Configure and use MCP servers
 * [Custom instructions](/docs/copilot/customization/custom-instructions.md) - Define custom instructions for AI responses
 * [Custom agents](/docs/copilot/customization/custom-agents.md) - Create custom AI personas and workflows

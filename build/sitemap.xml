@@ -426,7 +426,7 @@
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://code.visualstudio.com/docs/copilot/chat/chat-tools</loc>
+        <loc>https://code.visualstudio.com/docs/copilot/agents/agent-tools</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -446,7 +446,7 @@
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://code.visualstudio.com/docs/copilot/chat/chat-planning</loc>
+        <loc>https://code.visualstudio.com/docs/copilot/agents/planning</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -481,7 +481,12 @@
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://code.visualstudio.com/docs/copilot/copilot-tips-and-tricks</loc>
+        <loc>https://code.visualstudio.com/docs/copilot/core-concepts</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://code.visualstudio.com/docs/copilot/best-practices</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -501,6 +506,11 @@
         <priority>0.8</priority>
     </url>
     <url>
+        <loc>https://code.visualstudio.com/docs/copilot/reference/mcp-configuration</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://code.visualstudio.com/docs/copilot/customization/language-models</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
@@ -512,6 +522,16 @@
     </url>
     <url>
         <loc>https://code.visualstudio.com/docs/copilot/customization/prompt-files</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://code.visualstudio.com/docs/copilot/customization/hooks</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://code.visualstudio.com/docs/copilot/customization/agent-skills</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -547,6 +567,11 @@
     </url>
     <url>
         <loc>https://code.visualstudio.com/docs/copilot/agents/subagents</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://code.visualstudio.com/docs/copilot/agents/local-agents</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>

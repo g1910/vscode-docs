@@ -18,6 +18,13 @@ This article covers the key features of cloud agents, and how to start and manag
 
 ![Screenshot of cloud agent session as a chat editor in VS Code.](../images/cloud-agents/cloud-agent-session.png)
 
+<div class="docs-action" data-show-in-doc="false" data-show-in-sidebar="true" title="Get started with agents">
+Follow a hands-on tutorial to experience local, background, and cloud agents in VS Code.
+
+* [Start tutorial](/docs/copilot/agents/agents-tutorial.md)
+
+</div>
+
 ## What are cloud agents?
 
 Unlike local and background agents that run on your local machine, cloud agents like Copilot coding agent run on remote infrastructure. You can view and manage all your cloud agent sessions from the unified Chat view in VS Code. This view also lets you create new cloud agent sessions directly from VS Code or hand off local or background agent conversations to cloud agents.
@@ -43,9 +50,11 @@ Key capabilities include:
 
 ### Third-party cloud agents
 
-VS Code supports third-party cloud agents like Claude coding agent and Codex coding agent as options for cloud agent sessions.
+VS Code supports third-party cloud agents like Claude coding agent and Codex coding agent as options for cloud agent sessions. You need to enable support for third-party agents in the cloud in your Copilot account settings before you can use them in VS Code.
 
-Learn more about [third-party agents in VS Code](/docs/copilot/agents/third-party-agents.md).
+You don't need to install the provider's VS Code extension to use their cloud agent in VS Code.
+
+Learn more about [third-party agents in VS Code](/docs/copilot/agents/third-party-agents.md) and how to enable them.
 
 ## Start a cloud agent session
 
@@ -86,9 +95,7 @@ To hand off a local agent session to a cloud agent session:
 
 1. Select the session type dropdown, and select **Cloud** to continue the session as a cloud agent.
 
-    If you're using the [Plan agent](/docs/copilot/chat/chat-planning.md), you can select **Continue in Cloud** from the **Start Implementation** dropdown to run the plan implementation in a cloud agent session
-
-1. Alternatively, type `@cloud` in the chat input to hand off the task to a cloud agent
+    If you're using the [Plan agent](/docs/copilot/agents/planning.md), you can select **Continue in Cloud** from the **Start Implementation** dropdown to run the plan implementation in a cloud agent session
 
 To hand off a background agent session to a cloud agent session, enter `/delegate` in the chat input of the background agent session. This command passes the full chat history and context to a new cloud agent session, which you can then monitor in the Chat view.
 

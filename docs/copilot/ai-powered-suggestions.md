@@ -15,6 +15,13 @@ You may experience two kinds of inline suggestions from Copilot, both of which m
 
 * **Next edit suggestions** - Predict your next code edit with Copilot next edit suggestions, aka Copilot NES. Based on the edits you're making, NES both predicts the location of the next edit you'll want to make and what that edit should be.
 
+<div class="docs-action" data-show-in-doc="false" data-show-in-sidebar="true" title="Get started with AI">
+Follow a hands-on tutorial to build your first app with AI in VS Code.
+
+* [Start tutorial](/docs/copilot/getting-started.md)
+
+</div>
+
 ## Getting started
 
 1. Install the GitHub Copilot extensions.
@@ -64,7 +71,7 @@ The following example shows how to instruct Copilot to create a class in TypeScr
 
 Ghost text suggestions are great at autocompleting a section of code. But since most coding activity is editing existing code, it's a natural evolution of inline suggestions to also help with edits, both at the cursor and further away. Edits are often not made in isolation - there's a logical flow of what edits need to be made in different scenarios. Next edit suggestions (Copilot NES) is this evolution.
 
-<video src="./images/inline-suggestions/nes-video.mp4" title="Video showing next edit suggestions in action on a Point typescript class." autoplay loop controls muted poster="./images/inline-suggestions/point3d.png"></video>
+<video src="./images/inline-suggestions/nes-video.mp4" title="Video showing next edit suggestions in action on a Point typescript class." loop controls muted poster="./images/inline-suggestions/point3d.png"></video>
 
 Based on the edits you're making, next edit suggestions both predicts the location of the next edit you'll want to make and what that edit should be. Copilot NES helps you stay in the flow, suggesting future changes relevant to your current work, and you can simply `kbstyle(Tab)` to quickly navigate and accept Copilot's suggestions. Suggestions may span a single symbol, an entire line, or multiple lines, depending on the scope of the potential change.
 

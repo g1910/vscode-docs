@@ -15,11 +15,35 @@ Keywords:
 
 # Subagents in Visual Studio Code
 
-Subagents in Visual Studio Code provide context isolation and enable you to run tasks in a dedicated context window, separate from the main agent session. This allows you to delegate complex or multi-step tasks to autonomous subagents without affecting the context window of the main chat session and helps it stay focused on the primary task. VS Code can run multiple subagents in parallel to improve overall performance.
+When working on complex tasks, you can delegate subtasks to subagents. A subagent is an independent AI agent that performs focused work, such as researching a topic, analyzing code, or reviewing changes, and reports the results back to the main agent. Because each subagent runs in its own context window, it doesn't add noise to your main conversation. VS Code can also run multiple subagents in parallel to speed up multi-part tasks.
 
-By default, subagents use the same agent and model as the main chat session. By running a custom agent as a subagent, you can apply specialized behavior, tools, and models for specific tasks. For example, use a research custom agent as a subagent to gather information and perform research tasks.
+For example, the built-in [Plan agent](/docs/copilot/agents/planning.md) uses subagents to perform research and analysis before creating an implementation plan. Each subagent works autonomously and returns only its findings. The Plan agent synthesizes these findings into a final plan.
 
-<!-- TODO: add a diagram of subagents -->
+By default, subagents use the same model and tools as the main chat session but start with a clean context window. Subagents don't inherit the main agent's instructions or conversation history. They receive only the task prompt you provide. By running a [custom agent](/docs/copilot/customization/custom-agents.md) as a subagent, you can apply specialized behavior, tools, and models for specific tasks.
+
+## How subagent execution works
+
+The following diagram shows how subagents work. The main agent receives your task, delegates subtasks to one or more subagents that each run in their own context window, and then combines the results.
+
+![Diagram that shows the subagent execution flow where the main agent delegates subtasks to subagents running in isolated context windows and receives result summaries back.](../images/subagents/subagent-execution-flow.png)
+
+Subagents are **synchronous**: the main agent waits for subagent results before continuing. This blocking behavior is intentional: subagent findings typically inform the next step of the task. Without the subagent results, the main agent lacks the information it needs to proceed effectively.
+
+However, VS Code can spawn **multiple subagents in parallel**. When you request parallel analysis (for example, "analyze security, performance, and accessibility simultaneously"), VS Code runs those subagents concurrently and waits for all results before the main agent continues.
+
+> [!NOTE]
+> Subagents are different from starting a new agent session. A new session creates an entirely separate conversation with no connection to your current task. Subagents maintain the relationship: they do focused work and report back to the main agent, which stays in control of the overall task.
+
+### What the user sees
+
+When a subagent runs, it appears in the chat as a collapsible tool call. By default, the subagent is collapsed and shows:
+
+* The name of the custom agent (if you specify one)
+* The currently running tool (for example, "Reading file..." or "Searching codebase...")
+
+Select the subagent tool call to expand it and view the full details, including all tool calls the subagent made, the prompt passed to the subagent, and the returned result.
+
+This visibility gives you control over how much detail you see without cluttering your main conversation with intermediate steps.
 
 ## Why use subagents?
 
@@ -104,11 +128,24 @@ Consolidate findings into a single review summary.
 
 ## Invoke a subagent
 
-To invoke a subagent in chat, the `runSubagent` tool must be enabled. This tool allows the main agent to delegate tasks to a subagent that operates in an isolated context window.
+### Agent-initiated vs. user-invoked
 
-Hint in your chat prompt that you want to use a subagent to perform a specific task. The main agent will start a subagent, pass the task to it, and receive only the final result.
+Subagents are typically **agent-initiated**, not directly invoked by users in chat. To allow the main agent to invoke subagents, make sure the `runSubagent` tool is enabled.
 
-To optimize the subagent's performance, clearly define the task and expected output in your prompt. This helps the subagent focus on the specific goal without passing unnecessary context to the main agent.
+The main agent decides when context isolation helps. You don't need to manually type "run a subagent" for every task. The pattern works like this:
+
+1. You (or your custom agent's instructions) describe a complex task.
+1. The main agent recognizes the part of the task that benefits from isolated context.
+1. The agent starts a subagent, passing only the relevant subtask.
+1. The subagent works autonomously and returns a summary.
+1. The main agent incorporates the result and continues.
+
+You can hint that you want subagent delegation by phrasing your prompt to suggest isolated research or parallel analysis. The main agent will start a subagent, pass the task to it, and receive only the final result.
+
+> [!TIP]
+> For consistent subagent behavior, define when to use subagents in your custom agent's instructions rather than prompting for them manually each time.
+
+To optimize subagent performance, clearly define the task and expected output. This helps the subagent focus on the specific goal without passing unnecessary context back to the main agent.
 
 See the [usage scenarios](#usage-scenarios) section for examples of how to structure prompts that invoke subagents.
 
@@ -125,13 +162,15 @@ Run a subagent to research the new feature implementation details and return onl
 Then update the docs/ folder with the new documentation.
 ```
 
+In the prompt instructions, you can then hint the agent to use subagents by suggesting isolated research or parallel analysis for specific subtasks.
+
 ## Run a custom agent as a subagent (Experimental)
 
-By default, a subagent inherits the agent from the main chat session and uses the same model and tools. To define specific behavior for a subagent, use a [custom agent](/docs/copilot/customization/custom-agents.md).
+By default, a subagent inherits the agent from the main chat session and uses the same model and tools. To define specific behavior for a subagent, use a [custom agent](/docs/copilot/customization/custom-agents.md). Custom agents can specify their own model, tools, and instructions. When used as a subagent, these settings override the defaults inherited from the main session.
 
 ### Control subagent invocation
 
-You can control how a custom agent can be invoked using two frontmatter properties:
+You can control how a custom agent can be invoked by using two frontmatter properties:
 
 * `user-invokable`: controls whether the agent appears in the agents dropdown in chat (default is `true`). Set to `false` to create agents that are only accessible as subagents.
 * `disable-model-invocation`: prevents the agent from being invoked as a subagent by other agents (default is `false`). Set to `true` when agents should only be triggered explicitly by users.
@@ -167,6 +206,9 @@ The `agents` property accepts:
 * `*` to allow all available agents (default behavior)
 * An empty array `[]` to prevent any subagent use
 
+> [!NOTE]
+> Explicitly listing an agent in the `agents` array overrides `disable-model-invocation: true`. This means you can create agents that are protected from general subagent use but still accessible to specific coordinator agents that explicitly allow them.
+
 For example, a test-driven development (TDD) agent should only use the `Red`, `Green`, and `Refactor` agents as subagents. If not restricted, the TDD agent might select a more generic coding agent for implementing the tests instead of the specialized TDD agents.
 
 ```markdown
@@ -180,6 +222,88 @@ Implement the following feature using test-driven development. Use subagents to 
 2. Use the Green agent to implement code to pass the tests
 3. Use the Refactor agent to improve the code quality
 ```
+
+## Orchestration patterns
+
+Subagents enable **orchestration patterns** where a coordinator agent delegates work to specialized worker agents. This approach helps you build sophisticated workflows while keeping each agent focused on what it does best.
+
+### Coordinator and worker pattern
+
+A coordinator agent manages the overall task and delegates subtasks to specialized subagents. Each worker agent can have a tailored set of tools. For example, planning and review agents need only read-only access, while the implementer needs edit capabilities.
+
+```markdown
+---
+name: Feature Builder
+tools: ['agent', 'edit', 'search', 'read']
+agents: ['Planner', 'Plan Architect', 'Implementer', 'Reviewer']
+---
+You are a feature development coordinator. For each feature request:
+
+1. Use the Planner agent to break down the feature into tasks.
+2. Use the Plan Architect agent to validate the plan against codebase patterns.
+3. If the architect identifies reusable patterns or libraries, send feedback to the Planner to update the plan.
+4. Use the Implementer agent to write the code for each task.
+5. Use the Reviewer agent to check the implementation.
+6. If the reviewer identifies issues, use the Implementer agent again to apply fixes.
+
+Iterate between planning and architecture, and between review and implementation, until each phase converges.
+```
+
+The worker agents each define their own tool access and can pick a faster or more cost-effective model since they have a narrower focus:
+
+```markdown
+---
+name: Planner
+user-invokable: false
+tools: ['read', 'search']
+---
+Break down feature requests into implementation tasks. Incorporate feedback from the Plan Architect.
+```
+
+```markdown
+---
+name: Plan Architect
+user-invokable: false
+tools: ['read', 'search']
+---
+Validate plans against the codebase. Identify existing patterns, utilities, and libraries that should be reused. Flag any plan steps that duplicate existing functionality.
+```
+
+```markdown
+---
+name: Implementer
+user-invokable: false
+model: ['Claude Haiku 4.5 (copilot)', 'Gemini 3 Flash (Preview) (copilot)']
+---
+Write code to complete assigned tasks.
+```
+
+This pattern keeps the coordinator's context focused on the high-level workflow while each worker agent has a clean context and appropriate permissions for its specific job.
+
+### Multi-perspective code review
+
+Code review benefits from multiple perspectives. A single pass often misses problems that become obvious when you look through a different lens. Use subagents to run each review perspective in parallel, then synthesize the findings.
+
+```markdown
+---
+name: Thorough Reviewer
+tools: ['agent', 'read', 'search']
+---
+You review code through multiple perspectives simultaneously. Run each perspective as a parallel subagent so findings are independent and unbiased.
+
+When asked to review code, run these subagents in parallel:
+- Correctness reviewer: logic errors, edge cases, type issues.
+- Code quality reviewer: readability, naming, duplication.
+- Security reviewer: input validation, injection risks, data exposure.
+- Architecture reviewer: codebase patterns, design consistency, structural alignment.
+
+After all subagents complete, synthesize findings into a prioritized summary. Note which issues are critical versus nice-to-have. Acknowledge what the code does well.
+```
+
+This pattern works because each subagent approaches the code fresh, without being anchored by what other perspectives found. In this example, the orchestrator shapes each subagent's focus area through its prompt. This is a lightweight approach that requires no additional agent files.
+
+> [!TIP]
+> For more control, each review perspective can be its own custom agent with specialized tool access. For example, a security reviewer might use a security-focused MCP server, while a code-quality reviewer might have access to linting CLI tools. This approach lets each perspective use the best tools for its specific focus.
 
 ## Related resources
 
