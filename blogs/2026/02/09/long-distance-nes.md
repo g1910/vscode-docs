@@ -1,158 +1,133 @@
 ---
 Order: 126
 TOCTitle: Long Distance NES
-PageTitle: "Long Distance Next Edit Suggestions: How We Extended NES Across Your Entire File"
+PageTitle: "Building Long-Distance Next Edit Suggestions"
 MetaDescription: Learn how we extended next edit suggestions to work across your entire file, reducing friction and improving productivity in GitHub Copilot.
 MetaSocialImage: long-distance-nes-hero.png
-Date: 2026-02-09
+Date: 2026-02-26
 Author: TODO
 ---
 
-# Long Distance Next Edit Suggestions: How We Extended NES Across Your Entire File
+# Building Long-Distance Next Edit Suggestions
 
 February 18, 2026 by [TODO](https://github.com/TODO)
 
-## From nearby edits to anywhere in the file
+Last February, we released [next edit suggestions (NES)](/docs/copilot/ai-powered-suggestions.md#next-edit-suggestions) in GitHub Copilot. NES extends ghost text by not just inserting code at your cursor, but suggesting edits nearby, anticipating what you'd change next. This was a powerful step forward, but it only worked within a small window around your cursor. In real editing workflows, the next change you need to make is often several screens away.
 
-Last February, we released [next edit suggestions (NES)](/docs/copilot/ai-powered-suggestions.md#next-edit-suggestions) in GitHub Copilot. NES extends ghost text by not just inserting code at your cursor, but suggesting edits nearby, anticipating what you'd change next and surfacing it inline.
-
-**Ghost Text**
-
-![A series of ghost text suggestions](ghost.gif)
-
-**NES**
-
-![A series of NES edits](nes.gif)
-
-On the GitHub Copilot team, we use the features we build every day. That tight feedback loop is how we spotted the next opportunity: NES worked well within a small window around your cursor, but real editing workflows often don't stay in one place. You rename a function, then scroll down to update every call site. You change a parameter type, then search through the file for every spot that depends on it. The next edit you need is often several screens away.
-
-What if NES could follow that train of thought?
-
-That's the problem we set out to solve with long-distance next edit suggestions. This post tells the story of how we built it: the modeling challenges, the UX decisions, and an unexpected lesson about teaching a model *restraint*.
+That's what we set out to solve with long-distance next edit suggestions: extending NES to predict and suggest edits anywhere in your file, not just near your current cursor position.
 
 ![A far away NES edit](jump.gif)
 
-## Going long-distance
+<!-- This post tells the story of how we built it: the modeling challenges, the UX decisions, and an unexpected lesson about teaching a model *restraint*. -->
 
-We set out to extend NES-style edits to arbitrary locations throughout a file. Instead of suggesting edits only near your cursor, the goal was to anticipate where your next meaningful change might occur, even several screens away.
+## From nearby edits to anywhere in the file
 
-This quickly became a modeling problem: how do you predict developer intent across space? In many workflows, such as renaming symbols, updating related logic, or modifying function signatures, the next edit is not adjacent to the current one. At the same time, jumping unnecessarily can break flow. The system must learn not only where to move, but also when not to move.
+Think about a typical refactoring session. You rename a function and all function invocations elsewhere in the file also need updating. Or you change a parameter type, which now makes the validation logic 200 lines down incorrect. These are exactly the moments where you would expect NES to help you, but unfortunately, the next meaningful edit is far outside its effective window.
 
-Rather than modifying the existing edit-generation model, we took a modular approach. We trained a separate model whose sole responsibility is to predict promising edit locations. The original NES model continues to generate the edit itself once a location is selected.
+This creates a hard modeling problem. The search space explodes from a handful of nearby lines to every line in the file. And the cost of getting it wrong isn't evenly split: a correct jump saves you real effort, but an unnecessary one interrupts your flow and makes you less likely to trust the next suggestion. The system must learn not only *where* to move, but also *when not to move*.
 
-This separation allows each model to specialize. One learns spatial intent, and the other produces high-quality edits within a local window. It also enables independent iteration on location prediction without disrupting ongoing improvements to the core NES edit model.
+Rather than modifying the existing edit-generation model, we decided to use a **multi-model approach**. We trained a **dedicated location model** whose sole responsibility is to predict _where_ the next edit should happen. Once a valid location is selected, the original NES model then generates the edit suggestion.
 
-In order to train a location model, we needed a way to evaluate whether it was actually working.
+This separation has two benefits. First, each **model can specialize on one task**: one model learns spatial intent (_where to jump_), the other model produces high-quality edits within a local window. In addition, it enables us to **iterate independently** on location prediction without disrupting ongoing improvements to the core NES model.
 
 ## Measuring success via an evaluation framework
 
-To ensure the model improved real-world editing behavior, we designed a structured three-step evaluation process:
+Before training the location model, we needed a way to measure whether it was actually working for real-world editing scenarios.
+
+We designed a structured three-step evaluation process:
 
 1. Identify common multi-edit workflows
 2. Construct representative cursor-jump examples
 3. Measure both jump and no-jump accuracy
 
-The overall evaluation framework is summarized below:
+![Diagram of the three-step evaluation flow, showing the progression from real editing workflows to structured evaluation dataset to spatial intent metrics.](evaluation_flow.png)
+
+<!--
 ```mermaid
-flowchart TD
+flowchart LR
     A["Real Editing<br/>Workflows"]
     B["Structured Evaluation<br/>Dataset"]
     C["Spatial Intent Metrics<br/>(Jump + No-Jump)"]
 
-    A --> B --> C
+    A --&gt; B --&gt; C
 ```
+-->
 
-First, we analyzed how developers chain together edits in practice rather than treating edits as isolated events. We observed several common workflows, including:
+We started by analyzing how developers chain together edits in real-world scenarios - renaming, signature changes, documentation updates - rather than treating each edit as an isolated event. The common thread: edits ripple across multiple, non-adjacent locations in a file.
 
-- Renaming variables, functions, or classes
-- Modifying function signatures
-- Updating related documentation
+From these workflows, we built an evaluation dataset where each example includes the ground-truth next line to jump to, recent edit history, and cursor context.
 
-These patterns share a key property: edits occur in multiple, non-adjacent locations within a file.
+Crucially, we measured both jump *and* no-jump accuracy. While many examples required predicting a new location, a meaningful subset required staying on the current line. A model that jumps too often can be just as disruptive as one that misses important transitions. Imagine getting a jump suggestion every time you're halfway through typing a variable name.
 
-Second, based on these workflows, we built an evaluation dataset that captures the signals required for location prediction. Each example includes the ground-truth next line to jump to, recent edit history, and cursor context.
-
-Finally, we explicitly measured both jump and no-jump behavior. While many examples required predicting a new location, a meaningful subset required staying on the current line. This distinction is critical; a model that jumps too often can be as disruptive as one that misses important transitions.
-
-By grounding evaluation in realistic multi-edit workflows and separating jump from no-jump cases, we ensured that offline metrics reflected actual editing behavior rather than artificial scenarios.
+By grounding evaluation in realistic workflows and measuring both jump and no-jump cases, we ensured that offline metrics reflected how developers actually edit rather than artificial scenarios.
 
 ## Building the training dataset
 
-With evaluation in place, we turned to training data. While the evaluation dataset was small enough to construct by hand, training required data at a much larger scale. To start out, we used same the data from our special data curation effort detailed in [our other post on training NES](https://github.blog/ai-and-ml/github-copilot/evolving-github-copilots-next-edit-suggestions-through-custom-model-training/). This dataset contains trajectories of how a developer moves and makes edits through a file.
+With evaluation in place, we turned to training data. While the evaluation dataset was small enough to construct by hand, training required data at a much larger scale. We started with the same dataset we curated for [training the core NES model](https://github.blog/ai-and-ml/github-copilot/evolving-github-copilots-next-edit-suggestions-through-custom-model-training/), which contains trajectories of how developers move through and edit a file.
 
-By replaying these trajectories, we can transform every cursor movement into a training sample. After applying some filters, such as ensuring the jump location appeared in the prompt, we constructed our training dataset.
+By replaying these trajectories, we transformed every cursor movement into a training sample. After applying filters, such as ensuring the jump location appeared in the prompt, we had our training dataset.
 
 ## Training with supervised finetuning
 
-To train the location model, we used Supervised Finetuning (SFT) with targeted hyperparameter search. Our strongest results came from a structured grid search centered around the hyperparameters of the existing NES model. By constraining the search space to values already known to perform well in a related setting, we were able to efficiently explore combinations and identify a high-performing configuration.
+To train the location model, we used **Supervised Finetuning** (SFT) with targeted hyperparameter search. Our strongest results came from a **structured grid search** centered around the hyperparameters of the existing NES model. By constraining the search space to values already known to perform well in a related setting, we were able to efficiently explore combinations and identify a high-performing configuration.
 
 Before settling on this approach, we also experimented with Bayesian Optimization, a technique designed to optimize expensive black-box functions. In our case, each evaluation required training a model from scratch, making experimentation computationally costly. While theoretically appealing, this approach did not yield improvements over the more focused grid search.
 
 Ultimately, the structured grid search produced our best-performing supervised model and provided a stable foundation for subsequent iterations.
 
-Extending the range of NES fundamentally changed what the system could do. But unlocking that capability required careful UX design to ensure suggestions feel discoverable, unobtrusive, and trustworthy. A better model alone is not enough if you never notice or trust the suggestions it produces. That meant the next challenge was designing for the user's experience.
-
 ## Designing UX for distant edits
 
-Extending NES requires continuously balancing three competing concerns:
+A better model isn't enough if you never notice or trust the suggestions it produces. With standard NES, suggestions appear close to your cursor and within your immediate view, making them naturally discoverable. With long-distance NES, the most relevant edit may not be in your immediate vicinity. So, the UX has to solve a harder problem: surfacing distant edits without disrupting your flow.
 
-* Keeping suggestions small
-* Making them easy to read
-* Minimizing how much of your code is obscured
+![Video of a far away jump suggestion, showing how the widget adapts to a gradually reducing window size.](rename_NES.gif)
 
-This balance becomes especially important when suggestions affect parts of the file that are not currently visible on your screen.
+This comes down to balancing three concerns: keeping suggestions compact, making them readable, and minimizing how much of your code they obscure.
 
-Next edit suggestions generally appear close to the cursor and within your immediate view, making them naturally discoverable while you were already focused on that section of code. With long-distance NES, however, the most relevant next edit may be several screens away. This introduces a new challenge: the system must surface spatially distant edits without disrupting flow or eroding trust.
+This is more than a discoverability problem. It's a trust problem. When the system proposes moving your cursor elsewhere, you need to quickly assess whether that jump is relevant and worth your attention. The UI must communicate enough context to evaluate the suggestion without demanding a full context switch.
 
-In practice, this is not just a discoverability problem but a trust-calibration problem. When a model proposes moving your cursor elsewhere, you need to quickly assess whether that jump is relevant and worth your attention. The UI must communicate enough context to evaluate the suggestion without demanding a full context switch.
-
-To address this, we optimized for minimal disruption and rapid assessment. Rather than rendering large diffs inline or forcing attention shifts, we designed a compact widget that appears near your cursor and prefers empty space when available. The widget adapts to the surrounding editor layout, shrinking or expanding to fit naturally into whitespace such as at the end of a line or between blocks of code.
+Rather than rendering large diffs inline or forcing attention shifts, we designed a compact widget that appears near your cursor and prefers empty space when available. The widget adapts to the surrounding editor layout, shrinking or expanding to fit naturally into whitespace such as at the end of a line or between blocks of code.
 
 Because the full edit may be far away and potentially large, the widget does not attempt to render the entire suggestion. Instead, it provides a lightweight preview, an excerpt from one of the affected lines, rendered with diff-style highlighting. This gives you just enough context to judge relevance and decide whether to act.
 
-If the preview looks useful, you can explicitly choose to jump to the suggested location and review or apply the full edit there. If not, you can continue editing uninterrupted.
-
-![A far away jump suggestion with the window gradually getting smaller](rename_NES.gif)
+If the preview looks useful, you can choose to jump to the suggested location and review or apply the full edit there. If not, you can continue editing uninterrupted.
 
 ## Internal testing and a key realization: Restraint
 
 We always dogfood and iterate internally before shipping new capabilities. Long-distance NES was no exception.
 
-During internal testing, one insight quickly became clear: predicting when _not_ to jump is just as important as predicting where to jump. In fact, it is often harder.
+During internal testing, one insight quickly became clear: predicting **when _not_ to jump is just as important as predicting where to jump**. In fact, it is often harder.
 
 While many of the model’s jump predictions were directionally correct, it was too eager to move the cursor. Even reasonable suggestions can become distracting if they appear too frequently. In a system that proactively proposes spatial changes, overconfidence is costly.
 
-When we analyzed evaluation metrics more closely, we found the root cause. Our dataset contained far fewer “no jump” examples than jump examples. In other words, the model had learned to predict movement more confidently than restraint.
+When we analyzed evaluation metrics more closely, we found the root cause. Our dataset contained far fewer "no jump" examples than jump examples. In other words, the model had learned to jump confidently but hadn't learned when to stay put.
 
 To address this, we reintroduced and expanded samples where the correct action was to remain on the current line. These included cases such as partially typed identifiers, where jumping elsewhere would not make sense. After rebalancing the dataset and retraining, both jump and no-jump accuracy improved significantly.
 
-More importantly, the qualitative feedback from dogfooding shifted. Suggestions felt more intentional and less intrusive, reinforcing that restraint is a first-class requirement in spatial prediction.
+More importantly, the qualitative feedback from dogfooding shifted. Suggestions felt more intentional and less intrusive, reinforcing that knowing when _not_ to act is just as important as knowing _where_ to act.
 
-## Online A/B testing
+## Running A/B tests
 
-Before shipping long-distance NES, we needed to validate at scale. We ran online A/B testing, comparing long-distance NES against standard NES. Our primary goal was to measure impact on real editing behavior: does this actually help you write and update code more efficiently?
+Before shipping long-distance NES to all users, we needed to validate at scale. We ran A/B tests comparing long-distance NES against standard NES. Our primary goal was to measure impact on real editing behavior: does this actually help you write and update code more efficiently?
 
-The initial results were positive. With long-distance edits enabled, we observed a 23% increase in code written via NES, along with improvements across several other engagement and acceptance metrics.
+The initial results were positive. With long-distance edits enabled, we observed a **23% increase in code written via NES**, along with improvements across several other engagement and acceptance metrics.
 
-At the same time, the experiment surfaced an important tradeoff. While expanded capabilities increased productivity, far-away suggestions were rejected more often than standard NES. Some of this was expected, given a new interaction pattern and broader edit scope. However, it also signaled an opportunity to improve how confidently and selectively suggestions were presented.
+At the same time, the experiment surfaced an important tradeoff. While expanded capabilities increased productivity, far-away suggestions were rejected more often than standard NES. Some of this was expected, given a new interaction pattern and broader edit scope. However, it also signaled an opportunity to improve how selectively the model chose to suggest jumps.
 
 Rather than treating this purely as a modeling issue or purely as a UX issue, we viewed it as a systems problem. Improving long-distance NES required tightening the model's jump predictions while also ensuring the interface made it easy to assess and accept relevant suggestions.
 
 ## Reinforcement Learning: Learning when not to jump
 
-One of the most important lessons from early testing was this: predicting *where* to jump is only half the problem. The harder problem is knowing *when not to jump at all.*
+Both internal testing and the A/B experiments pointed to the same conclusion: the supervised model was still too eager to move the cursor. Precision alone was not enough. The model needed restraint.
 
-While the supervised model performed well offline, the internal testing and online A/B experiments revealed that it was still too eager to move the cursor. Even when individual predictions were reasonable, suggesting a jump at the wrong moment could interrupt flow and erode trust. Precision alone was not enough. The model needed restraint.
+To address this, we introduced a reinforcement learning stage using **Reinforcement Learning with Verified Rewards (RLVR)**. Instead of relying solely on supervised labels, we added a grading signal based on how closely the model's predicted jump location matched the eventual cursor movement. Predictions that aligned closely with actual editing behavior were rewarded more strongly, while unnecessary or poorly timed jumps were penalized.
 
-To address this, we introduced a reinforcement learning stage using Reinforcement Learning with Verified Rewards (RLVR). Instead of relying solely on supervised labels, we added a grading signal based on how closely the model’s predicted jump location matched the eventual cursor movement. Predictions that aligned closely with actual editing behavior were rewarded more strongly, while unnecessary or poorly timed jumps were penalized.
-
-This allowed the model to directly optimize for spatial intent under real editing conditions, without requiring new manual annotations or UX instrumentation.
+This allowed the model to optimize directly for real editing conditions, without requiring new manual annotations or UX instrumentation.
 
 The result was a better balance between initiative and restraint. The updated model improved offline metrics and translated those gains into online performance, increasing code written via NES while reducing rejection rates. With those signals in place, we began shipping the improved version the following month.
 
 ## What's next?
 
-Looking ahead, we plan to extend this work by incorporating cross-file long distance suggestions, enabling the model to reason beyond the current file. We also aim to explore a unified model that jointly predicts both the location of the next edit and the edit itself, allowing for tighter coupling between cursor movement and code generation and potentially improving overall suggestion relevance and user experience.
+Looking ahead, we plan to extend this work with cross-file suggestions, enabling the model to reason beyond the current file. We're also exploring a unified model that predicts both the location and the content of the next edit together, which could improve overall suggestion relevance.
 
 ## Try It Out
 
@@ -164,4 +139,4 @@ Happy coding! 💙
 
 #### Acknowledgements
 
-First, a big shoutout to our developer community for continuing to give us feedback and push us to deliver the best possible experiences with VS Code and GitHub Copilot. Moreover, a huge thanks to the researchers, engineers, product managers, designers across GitHub and Microsoft who curated the training data, built the training pipeline, evaluation suites, client and serving stack – and to the VS Code and GitHub Copilot product and engineering teams for smooth model releases.
+A big shoutout to our developer community for the ongoing feedback that pushes us to deliver the best possible experiences with VS Code and GitHub Copilot. And a huge thanks to the researchers, engineers, product managers, and designers across GitHub and Microsoft who curated the training data, built the training pipeline, evaluation suites, and serving stack, and to the VS Code and GitHub Copilot teams for smooth model releases.
