@@ -117,7 +117,7 @@ Looking ahead, we plan to extend this work with cross-file suggestions, enabling
 
 ## Try It Out
 
-Long-distance next edit suggestions are available now in [VS Code](https://code.visualstudio.com/) for users with a [GitHub Copilot](https://github.com/features/copilot) subscription - just ensure you have [next edit suggestions enabled](/docs/copilot/ai-powered-suggestions.md#next-edit-suggestions) in VS Code. Give it a try the next time you're doing refactoring work—renaming variables, updating function signatures, or making changes that ripple through your file. We'd love to hear your feedback!
+Long-distance next edit suggestions are available now in [VS Code](https://code.visualstudio.com/) for users with a [GitHub Copilot](https://github.com/features/copilot) subscription - just ensure you have [next edit suggestions](/docs/copilot/ai-powered-suggestions.md#next-edit-suggestions) and extended NES range `setting(github.copilot.nextEditSuggestions.extendedRange)` enabled in VS Code. Give it a try the next time you're doing refactoring work—renaming variables, updating function signatures, or making changes that ripple through your file. We'd love to hear your feedback!
 
 Happy coding! 💙
 
