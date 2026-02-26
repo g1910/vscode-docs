@@ -159,3 +159,9 @@ Looking ahead, we plan to extend this work by incorporating cross-file long dist
 Long-distance next edit suggestions are available now in [VS Code](https://code.visualstudio.com/) for users with a [GitHub Copilot](https://github.com/features/copilot) subscription. Give it a try the next time you're doing refactoring work—renaming variables, updating function signatures, or making changes that ripple through your file. We'd love to hear your feedback!
 
 Happy coding! 💙
+
+---
+
+#### Acknowledgements
+
+First, a big shoutout to our developer community for continuing to give us feedback and push us to deliver the best possible experiences with VS Code and GitHub Copilot. Moreover, a huge thanks to the researchers, engineers, product managers, designers across GitHub and Microsoft who curated the training data, built the training pipeline, evaluation suites, client and serving stack – and to the VS Code and GitHub Copilot product and engineering teams for smooth model releases.
