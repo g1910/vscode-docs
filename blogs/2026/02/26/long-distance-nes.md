@@ -5,7 +5,7 @@ PageTitle: "Building Long-Distance Next Edit Suggestions"
 MetaDescription: Learn how we extended next edit suggestions to work across your entire file, reducing friction and improving productivity in GitHub Copilot.
 MetaSocialImage: long-distance-nes-hero.png
 Date: 2026-02-26
-Author: TODO
+Author: Vikram Duvvur, Gaurav Mittal, Benjamin Simmonds
 ---
 
 # Building Long-Distance Next Edit Suggestions
